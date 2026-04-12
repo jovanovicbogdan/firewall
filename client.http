@@ -1,0 +1,16 @@
+### Add new rule
+POST http://localhost:8080/api/v1/firewall/rules
+Content-Type: application/json
+
+{
+  "srcStart": "20.20.20.20",
+  "srcEnd": "25.25.25.25",
+  "destStart": "30.30.30.30",
+  "destEnd": "35.35.35.35",
+  "action": "ALLOW"
+}
+
+### Get firewall decision
+GET http://localhost:8080/api/v1/firewall/decision?srcIp=21.21.21.21&destIp=32.32.32.32
+
+###

@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:18.0-alpine
+    # container_name should be avoided
+    container_name: db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: firewall
+      PG_DATA: /var/lib/postgresql/data/pgdata
+  #    volumes:
+  #      - firewall_db:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - "8000:8080"
+
+#volumes:
+#  firewall_db:

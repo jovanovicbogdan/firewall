@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+    http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd ">
+
+  <changeSet author="Bogdan Jovanovic" id="schemaInit_action">
+    <sql>
+      CREATE TYPE action AS ENUM('ALLOW', 'DENY');
+      CREATE CAST (character varying AS action) WITH INOUT AS IMPLICIT;
+    </sql>
+    <rollback>
+      <sql>
+        DROP CAST (character varying AS action);
+        DROP TYPE action;
+      </sql>
+    </rollback>
+  </changeSet>
+
+  <changeSet author="Bogdan Jovanovic" id="schemaInit_createRuleTable">
+    <createTable tableName="rule">
+      <column name="rule_id" type="bigserial">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="src_start" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="src_end" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="dest_start" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="dest_end" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="action" type="action">
+        <constraints nullable="false"/>
+      </column>
+      <column name="version" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+<!--    <createIndex tableName="budget" indexName="idx_budget_budget_date">-->
+<!--      <column name="budget_date"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="budget" indexName="idx_budget_user_id">-->
+<!--      <column name="user_id"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="budget" indexName="idx_budget_is_deleted">-->
+<!--      <column name="is_deleted"/>-->
+<!--    </createIndex>-->
+  </changeSet>
+
+<!--  <changeSet author="Bogdan Jovanovic" id="schemaInit_createAllocationTable">-->
+<!--    <createTable tableName="allocation">-->
+<!--      <column name="allocation_id" type="uuid" defaultValueComputed="uuid_generate_v4()">-->
+<!--        <constraints primaryKey="true"/>-->
+<!--      </column>-->
+<!--      <column name="allocation_name" type="varchar(255)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="allocation_type" type="allocation_type">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="planned_amount" type="decimal(15, 2)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="actual_amount" type="decimal(15, 2)">-->
+<!--        <constraints nullable="true"/>-->
+<!--      </column>-->
+<!--      <column name="budget_id" type="uuid">-->
+<!--        <constraints nullable="false" foreignKeyName="fk_allocation_budget_id"-->
+<!--          referencedTableName="budget"-->
+<!--          referencedColumnNames="budget_id"/>-->
+<!--      </column>-->
+<!--      <column name="is_deleted" type="boolean" defaultValueBoolean="false">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="version" type="int">-->
+<!--        <constraints nullable="true"/>-->
+<!--      </column>-->
+<!--    </createTable>-->
+<!--    <createIndex tableName="allocation" indexName="idx_allocation_allocation_type">-->
+<!--      <column name="allocation_type"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="allocation" indexName="idx_allocation_budget_id">-->
+<!--      <column name="budget_id"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="allocation" indexName="idx_allocation_is_deleted">-->
+<!--      <column name="is_deleted"/>-->
+<!--    </createIndex>-->
+<!--  </changeSet>-->
+
+<!--  <changeSet author="Bogdan Jovanovic" id="schemaInit_createTransactionTable">-->
+<!--    <createTable tableName="transaction">-->
+<!--      <column name="transaction_id" type="uuid" defaultValueComputed="uuid_generate_v4()">-->
+<!--        <constraints primaryKey="true"/>-->
+<!--      </column>-->
+<!--      <column name="amount" type="decimal(15, 2)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="transaction_date" type="date">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="description" type="text">-->
+<!--        <constraints nullable="true"/>-->
+<!--      </column>-->
+<!--      <column name="budget_id" type="uuid">-->
+<!--        <constraints nullable="false" foreignKeyName="fk_transaction_budget_id"-->
+<!--          referencedColumnNames="budget_id" referencedTableName="budget"/>-->
+<!--      </column>-->
+<!--      <column name="allocation_id" type="uuid">-->
+<!--        <constraints nullable="false" foreignKeyName="fk_transaction_allocation_id"-->
+<!--          referencedColumnNames="allocation_id" referencedTableName="allocation"/>-->
+<!--      </column>-->
+<!--      <column name="is_deleted" type="boolean" defaultValueBoolean="false">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="version" type="int">-->
+<!--        <constraints nullable="true"/>-->
+<!--      </column>-->
+<!--    </createTable>-->
+<!--    <createIndex tableName="transaction" indexName="idx_transaction_transaction_date">-->
+<!--      <column name="transaction_date"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="transaction" indexName="idx_transaction_budget_id">-->
+<!--      <column name="budget_id"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="transaction" indexName="idx_transaction_allocation_id">-->
+<!--      <column name="allocation_id"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="transaction" indexName="idx_transaction_is_deleted">-->
+<!--      <column name="is_deleted"/>-->
+<!--    </createIndex>-->
+<!--  </changeSet>-->
+
+<!--  <changeSet author="Bogdan Jovanovic" id="schemaInit_createStatementTransactionTable">-->
+<!--    <createTable tableName="statement_transaction">-->
+<!--      <column name="statement_transaction_id" type="uuid" defaultValueComputed="uuid_generate_v4()">-->
+<!--        <constraints primaryKey="true"/>-->
+<!--      </column>-->
+<!--      <column name="value_date" type="date">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="execution_date" type="date">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="description" type="text">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="currency_code" type="varchar(3)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="transaction_type" type="transaction_type">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="amount" type="decimal(15, 2)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="budget_id" type="uuid">-->
+<!--        <constraints nullable="false" foreignKeyName="fk_statement_transaction_budget_id"-->
+<!--          referencedTableName="budget"-->
+<!--          referencedColumnNames="budget_id"/>-->
+<!--      </column>-->
+<!--      <column name="is_processed" type="boolean" defaultValueBoolean="false">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="is_deleted" type="boolean" defaultValueBoolean="false">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="version" type="int">-->
+<!--        <constraints nullable="true"/>-->
+<!--      </column>-->
+<!--    </createTable>-->
+<!--    <createIndex tableName="statement_transaction"-->
+<!--      indexName="idx_statement_transaction_currency_code">-->
+<!--      <column name="currency_code"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="statement_transaction"-->
+<!--      indexName="idx_statement_transaction_is_processed">-->
+<!--      <column name="is_processed"/>-->
+<!--    </createIndex>-->
+<!--    <createIndex tableName="statement_transaction" indexName="idx_statement_transaction_is_deleted">-->
+<!--      <column name="is_deleted"/>-->
+<!--    </createIndex>-->
+<!--  </changeSet>-->
+
+<!--  <changeSet author="Bogdan Jovanovic" id="schemaInit_createBudgetAuditTable">-->
+<!--    <createTable tableName="budget_audit">-->
+<!--      <column name="budget_id" type="uuid"/>-->
+<!--      <column name="start_balance" type="decimal(15, 2)"/>-->
+<!--      <column name="budget_date" type="date"/>-->
+<!--      <column name="user_id" type="varchar(64)"/>-->
+<!--      <column name="action" type="action_type"/>-->
+<!--      <column name="is_deleted" type="boolean" defaultValueBoolean="false"/>-->
+<!--      <column name="version" type="int"/>-->
+<!--      <column name="created_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="created_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--    </createTable>-->
+<!--  </changeSet>-->
+
+<!--  <changeSet author="Bogdan Jovanovic" id="schemaInit_createAllocationAuditTable">-->
+<!--    <createTable tableName="allocation_audit">-->
+<!--      <column name="allocation_id" type="uuid"/>-->
+<!--      <column name="allocation_name" type="varchar(255)"/>-->
+<!--      <column name="allocation_type" type="allocation_type"/>-->
+<!--      <column name="planned_amount" type="decimal(15, 2)"/>-->
+<!--      <column name="actual_amount" type="decimal(15, 2)"/>-->
+<!--      <column name="budget_id" type="uuid"/>-->
+<!--      <column name="action" type="action_type"/>-->
+<!--      <column name="is_deleted" type="boolean" defaultValueBoolean="false"/>-->
+<!--      <column name="version" type="int"/>-->
+<!--      <column name="created_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="created_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--    </createTable>-->
+<!--  </changeSet>-->
+
+<!--  <changeSet author="Bogdan Jovanovic" id="schemaInit_createTransactionAuditTable">-->
+<!--    <createTable tableName="transaction_audit">-->
+<!--      <column name="transaction_id" type="uuid"/>-->
+<!--      <column name="amount" type="decimal(15, 2)"/>-->
+<!--      <column name="transaction_date" type="date"/>-->
+<!--      <column name="description" type="text"/>-->
+<!--      <column name="budget_id" type="uuid"/>-->
+<!--      <column name="allocation_id" type="uuid"/>-->
+<!--      <column name="action" type="action_type"/>-->
+<!--      <column name="is_deleted" type="boolean" defaultValueBoolean="false"/>-->
+<!--      <column name="version" type="int"/>-->
+<!--      <column name="created_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="created_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--    </createTable>-->
+<!--  </changeSet>-->
+
+<!--  <changeSet author="Bogdan Jovanovic" id="schemaInit_createStatementTransactionTableAudit">-->
+<!--    <createTable tableName="statement_transaction_audit">-->
+<!--      <column name="statement_transaction_id" type="uuid" defaultValueComputed="uuid_generate_v4()"/>-->
+<!--      <column name="value_date" type="date"/>-->
+<!--      <column name="execution_date" type="date"/>-->
+<!--      <column name="description" type="text"/>-->
+<!--      <column name="currency_code" type="varchar(3)"/>-->
+<!--      <column name="transaction_type" type="transaction_type"/>-->
+<!--      <column name="amount" type="decimal(15, 2)"/>-->
+<!--      <column name="budget_id" type="uuid"/>-->
+<!--      <column name="is_processed" type="boolean" defaultValueBoolean="false"/>-->
+<!--      <column name="action" type="action_type"/>-->
+<!--      <column name="is_deleted" type="boolean" defaultValueBoolean="false"/>-->
+<!--      <column name="version" type="int"/>-->
+<!--      <column name="created_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="created_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_by" type="varchar(64)">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--      <column name="modified_at" type="timestamptz">-->
+<!--        <constraints nullable="false"/>-->
+<!--      </column>-->
+<!--    </createTable>-->
+<!--  </changeSet>-->
+
+</databaseChangeLog>

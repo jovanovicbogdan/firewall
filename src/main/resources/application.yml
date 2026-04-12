@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: firewall
+  profiles:
+    default: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/firewall
+    username: postgres
+    password: rootpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        stringtype: unspecified
+  liquibase:
+    change-log: migrations/schema.xml
+
+logging:
+  level:
+    org.springframework.security: trace
+    dev.bogdanjovanovic: trace
+    org.springframework.jdbc: trace
+
+app:
+  config:
+    core-pool-size: 1
