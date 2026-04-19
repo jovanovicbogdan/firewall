@@ -19,24 +19,24 @@ import org.springframework.stereotype.Service;
 @Service
 public class RuleEvaluator {
 
-  private static final long COOLDOWN_MS = 5000;
-
   private final AtomicBoolean shouldRebuild = new AtomicBoolean(false);
   private final AtomicLong lastRebuildTs = new AtomicLong(System.currentTimeMillis());
   private final AtomicReference<ImmutableRangeMap<Long, ImmutableRangeMap<Long, Action>>> rules = new AtomicReference<>(
       ImmutableRangeMap.of());
 
   private final RuleRepository ruleRepository;
+  private final FirewallConfig firewallConfig;
   @SuppressWarnings("FieldCanBeLocal")
   private final ScheduledExecutorService threadScheduler;
 
   public RuleEvaluator(final RuleRepository ruleRepository, final FirewallConfig firewallConfig) {
     this.ruleRepository = ruleRepository;
+    this.firewallConfig = firewallConfig;
     threadScheduler = Executors.newScheduledThreadPool(firewallConfig.corePoolSize());
     threadScheduler.scheduleAtFixedRate(this::refreshRulesIfNeeded, 0, 1L, TimeUnit.SECONDS);
   }
 
-  public boolean isAllowed(final Long srcIp, final Long destIp) {
+  public boolean isAllowed(final long srcIp, final long destIp) {
     final var srcRange = getRules().get(srcIp);
     if (srcRange == null) {
       log.info("Source ip '{}' not found in rules", srcIp);
@@ -67,7 +67,7 @@ public class RuleEvaluator {
 
     final var now = System.currentTimeMillis();
     final var elapsedTime = now - lastRebuildTs.get();
-    if (elapsedTime < COOLDOWN_MS) {
+    if (elapsedTime < firewallConfig.cooldownMs()) {
       log.info("Rule sync throttled");
       return;
     }
@@ -87,7 +87,7 @@ public class RuleEvaluator {
     }
     this.rules.set(rulesMapBuilder.build());
     final var end = System.currentTimeMillis();
-    log.info("Rules rebuilt, it took {}ms", end - start);
+    log.info("Rules rebuilt, took {}ms", end - start);
 
     shouldRebuild.set(false);
     lastRebuildTs.set(System.currentTimeMillis());

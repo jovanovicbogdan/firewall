@@ -1,5 +1,6 @@
 package dev.bogdanjovanovic.firewall;
 
+import dev.bogdanjovanovic.firewall.common.config.FirewallConfig;
 import dev.bogdanjovanovic.firewall.infrastructure.persistence.RuleEntity;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -30,9 +31,12 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class BaseTest {
 
   @Autowired
+  private JdbcClient jdbcClient;
+  @Autowired
   protected RestTestClient restTestClient;
   @Autowired
-  private JdbcClient jdbcClient;
+  protected FirewallConfig firewallConfig;
+
   protected final DefaultNamingStrategy namingStrategy = new DefaultNamingStrategy();
 
   static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(

@@ -1,0 +1,4 @@
+app:
+  config:
+    core-pool-size: 1
+    cooldown-ms: 500

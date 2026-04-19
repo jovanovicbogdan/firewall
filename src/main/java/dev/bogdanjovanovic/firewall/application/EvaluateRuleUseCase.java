@@ -1,8 +1,9 @@
 package dev.bogdanjovanovic.firewall.application;
 
+import com.google.common.net.InetAddresses;
 import dev.bogdanjovanovic.firewall.common.config.FirewallConfig;
-import dev.bogdanjovanovic.firewall.common.utils.IPAddressUtils;
 import dev.bogdanjovanovic.firewall.domain.service.RuleEvaluator;
+import java.net.InetAddress;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -20,9 +21,9 @@ public class EvaluateRuleUseCase {
     this.ruleEvaluator = ruleEvaluator;
   }
 
-  public boolean execute(final String srcIp, final String destIp) {
-    return ruleEvaluator.isAllowed(IPAddressUtils.ipV4ToLong(srcIp),
-        IPAddressUtils.ipV4ToLong(destIp));
+  public boolean execute(final InetAddress srcIp, final InetAddress destIp) {
+    return ruleEvaluator.isAllowed(InetAddresses.toBigInteger(srcIp).longValue(),
+        InetAddresses.toBigInteger(destIp).longValue());
   }
 
 }
