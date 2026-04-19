@@ -20,10 +20,5 @@ public class RuleEntity {
   private Long destStart;
   private Long destEnd;
   private Action action;
-  /**
-   * Version of ruleset.
-   * Increments everytime new rule is inserted.
-   */
-  private Long version;
 
 }

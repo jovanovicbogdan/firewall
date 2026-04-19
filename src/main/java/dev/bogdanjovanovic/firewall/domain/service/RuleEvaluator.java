@@ -1,7 +1,16 @@
 package dev.bogdanjovanovic.firewall.domain.service;
 
 import com.google.common.collect.ImmutableRangeMap;
+import com.google.common.collect.ImmutableRangeMap.Builder;
+import com.google.common.collect.Range;
+import dev.bogdanjovanovic.firewall.common.config.FirewallConfig;
 import dev.bogdanjovanovic.firewall.domain.Action;
+import dev.bogdanjovanovic.firewall.infrastructure.persistence.RuleRepository;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,8 +19,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class RuleEvaluator {
 
+  private static final long COOLDOWN_MS = 5000;
+
+  private final AtomicBoolean shouldRebuild = new AtomicBoolean(false);
+  private final AtomicLong lastRebuildTs = new AtomicLong(System.currentTimeMillis());
   private final AtomicReference<ImmutableRangeMap<Long, ImmutableRangeMap<Long, Action>>> rules = new AtomicReference<>(
       ImmutableRangeMap.of());
+
+  private final RuleRepository ruleRepository;
+  @SuppressWarnings("FieldCanBeLocal")
+  private final ScheduledExecutorService threadScheduler;
+
+  public RuleEvaluator(final RuleRepository ruleRepository, final FirewallConfig firewallConfig) {
+    this.ruleRepository = ruleRepository;
+    threadScheduler = Executors.newScheduledThreadPool(firewallConfig.corePoolSize());
+    threadScheduler.scheduleAtFixedRate(this::refreshRulesIfNeeded, 0, 1L, TimeUnit.SECONDS);
+  }
 
   public boolean isAllowed(final Long srcIp, final Long destIp) {
     final var srcRange = getRules().get(srcIp);
@@ -19,20 +42,55 @@ public class RuleEvaluator {
       log.info("Source ip '{}' not found in rules", srcIp);
       return false;
     }
+
     final var action = srcRange.get(destIp);
     if (action == null) {
       log.info("Destination ip '{}' not found in rules", destIp);
       return false;
     }
-    return Action.ALLOW.equals(action);
-  }
 
-  public void setRules(final ImmutableRangeMap<Long, ImmutableRangeMap<Long, Action>> rules) {
-    this.rules.set(rules);
+    return Action.ALLOW.equals(action);
   }
 
   public ImmutableRangeMap<Long, ImmutableRangeMap<Long, Action>> getRules() {
     return rules.get();
+  }
+
+  public void requestRuleRebuild() {
+    shouldRebuild.set(true);
+  }
+
+  private void refreshRulesIfNeeded() {
+    if (!shouldRebuild.get()) {
+      return;
+    }
+
+    final var now = System.currentTimeMillis();
+    final var elapsedTime = now - lastRebuildTs.get();
+    if (elapsedTime < COOLDOWN_MS) {
+      log.info("Rule sync throttled");
+      return;
+    }
+
+    final var rules = ruleRepository.findRules();
+
+    if (rules.isEmpty()) {
+      return;
+    }
+
+    final var start = System.currentTimeMillis();
+    final Builder<Long, ImmutableRangeMap<Long, Action>> rulesMapBuilder = ImmutableRangeMap.builder();
+    for (final var rule : rules) {
+      final var destMap = ImmutableRangeMap.of(
+          Range.closed(rule.getDestStart(), rule.getDestEnd()), rule.getAction());
+      rulesMapBuilder.put(Range.closed(rule.getSrcStart(), rule.getSrcEnd()), destMap);
+    }
+    this.rules.set(rulesMapBuilder.build());
+    final var end = System.currentTimeMillis();
+    log.info("Rules rebuilt, it took {}ms", end - start);
+
+    shouldRebuild.set(false);
+    lastRebuildTs.set(System.currentTimeMillis());
   }
 
 }

@@ -41,7 +41,7 @@ public class FirewallIntegrationTests extends BaseTest {
 
     addRule(addRuleRequest);
 
-    sleep(1500L);
+    sleep(6500L);
 
     final var srcIp = addRuleRequest.getSrcStart();
     final var destIp = addRuleRequest.getDestStart();
@@ -68,7 +68,7 @@ public class FirewallIntegrationTests extends BaseTest {
 
     addRule(addRuleRequest);
 
-    sleep(1500L);
+    sleep(6500L);
 
     final var srcIp = addRuleRequest.getSrcStart();
     final var destIp = addRuleRequest.getDestStart();

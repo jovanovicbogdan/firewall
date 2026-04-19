@@ -30,11 +30,10 @@ public class AddRuleUseCase {
     if (!ruleRepository.acquire_lock(lockKey)) {
       throw new RuntimeException("Unable to acquire the lock");
     }
+
     if (ruleRepository.isOverlap(srcStart, srcEnd, Action.valueOf(request.getAction()))) {
       throw new ClientErrorException("Rule overlaps with the existing rule", HttpStatus.CONFLICT);
     }
-
-    final var rule = ruleRepository.findLatestRule();
 
     ruleRepository.save(RuleEntity.builder()
         .srcStart(srcStart)
@@ -42,7 +41,6 @@ public class AddRuleUseCase {
         .destStart(IPAddressUtils.ipV4ToLong(request.getDestStart()))
         .destEnd(IPAddressUtils.ipV4ToLong(request.getDestEnd()))
         .action(Action.valueOf(request.getAction()))
-        .version(rule.map(ruleEntity -> ruleEntity.getVersion() + 1).orElse(1L))
         .build());
   }
 

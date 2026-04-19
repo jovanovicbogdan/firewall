@@ -1,12 +1,12 @@
 package dev.bogdanjovanovic.firewall;
 
-import dev.bogdanjovanovic.firewall.common.config.FirewallConfiguration;
+import dev.bogdanjovanovic.firewall.common.config.FirewallConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({FirewallConfiguration.class})
+@EnableConfigurationProperties({FirewallConfig.class})
 public class FirewallApplication {
 
   static void main(String[] args) {
