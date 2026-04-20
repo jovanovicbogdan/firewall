@@ -1,11 +1,20 @@
 # Firewall
 
-Rules are persisted in a database along with the `version` column which is `BIGINT` field
-incremented everytime new rule is inserted.
+On app startup `PgQWorker` listener threads are started to listen for incoming notifications from
+PgQ. Whenever rule is inserted, updated or deleted a trigger is fired to signal an event
+`rule_changed`. This event requests that in-memory `ImmutableRangeMap` should be rebuilt in
+`RuleEvaluator` class. To avoid constant rebuilding, throttling is implemented, the time between
+rebuilding has to be at least 5 seconds.
 
-`RuleSyncJob` is scheduled to poll every second to check if new rule is available based on current
-in-memory version. If there is new version then `ImmutableRangeMap` is rebuilt (values copied from
-the existing one to a new one) and swapped atomically in `RuleEvaluator`.
+## Message Delivery
+
+From PostgreSQL [docs](https://www.postgresql.org/docs/current/sql-notify.html):
+
+> PgQ `NOTIFY` docs states if the same channel name is signaled multiple times with
+identical payload strings within the same transaction, only one instance of the notification event
+is delivered to listeners. NOTIFY guarantees that notifications from the same transaction get
+delivered in the order they were sent. It is also guaranteed that messages from different
+transactions are delivered in the order in which the transactions committed.
 
 ## REST
 
