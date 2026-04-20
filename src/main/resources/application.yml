@@ -23,4 +23,4 @@ logging:
 app:
   config:
     core-pool-size: 1
-    cooldown-ms: 5000
+    cooldown-ms: 10000
