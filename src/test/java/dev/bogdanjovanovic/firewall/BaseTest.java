@@ -64,8 +64,6 @@ public abstract class BaseTest {
   void beforeEach() {
     final var ruleTable = namingStrategy.getTableName(RuleEntity.class)
         .replace("_entity", "");
-    System.out.println(namingStrategy.getTableName(RuleEntity.class));
-    System.out.println(ruleTable);
     JdbcTestUtils.deleteFromTables(jdbcClient, ruleTable);
   }
 
