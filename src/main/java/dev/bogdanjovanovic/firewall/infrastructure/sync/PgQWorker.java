@@ -24,8 +24,6 @@ public class PgQWorker implements Runnable {
   public void run() {
     try (final var conn = dataSource.getConnection();
         final var stmt = conn.createStatement()) {
-      conn.setAutoCommit(true);
-
       stmt.execute(String.format("LISTEN %s", CHANNEL));
       final var pgConn = conn.unwrap(PGConnection.class);
 
