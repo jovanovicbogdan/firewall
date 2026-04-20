@@ -28,8 +28,8 @@ public class PgQWorker implements Runnable {
       final var pgConn = conn.unwrap(PGConnection.class);
 
       while (!Thread.interrupted()) {
-        // block for small amount of time to avoid busy polling
-        final var notifications = pgConn.getNotifications(500);
+        // block for a small amount of time to avoid busy polling
+        final var notifications = pgConn.getNotifications(250);
 
         for (final var notification : notifications) {
           final String msg = notification.getParameter();
