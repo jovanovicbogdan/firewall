@@ -7,7 +7,6 @@ import dev.bogdanjovanovic.firewall.domain.Action;
 import dev.bogdanjovanovic.firewall.infrastructure.persistence.RuleEntity;
 import dev.bogdanjovanovic.firewall.infrastructure.persistence.RuleRepository;
 import dev.bogdanjovanovic.firewall.presentation.api.dto.AddRuleRequest;
-import java.net.InetAddress;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,8 +20,8 @@ public class AddRuleUseCase {
 
   @Transactional
   public void execute(final AddRuleRequest request) {
-    final var srcStart = InetAddresses.toBigInteger(InetAddress.ofLiteral(request.getSrcStart()));
-    final var srcEnd = InetAddresses.toBigInteger(InetAddress.ofLiteral(request.getSrcEnd()));
+    final var srcStart = InetAddresses.toBigInteger(InetAddresses.forString(request.getSrcStart()));
+    final var srcEnd = InetAddresses.toBigInteger(InetAddresses.forString(request.getSrcEnd()));
 
     if (srcStart.compareTo(srcEnd) > 0) {
       throw new ClientErrorException("Invalid source range");

@@ -1,12 +1,12 @@
 package dev.bogdanjovanovic.firewall.presentation.api;
 
+import com.google.common.net.InetAddresses;
 import dev.bogdanjovanovic.firewall.application.AddRuleUseCase;
 import dev.bogdanjovanovic.firewall.application.EvaluateRuleUseCase;
 import dev.bogdanjovanovic.firewall.common.exception.ClientErrorException;
 import dev.bogdanjovanovic.firewall.domain.Action;
 import dev.bogdanjovanovic.firewall.presentation.api.dto.AddRuleRequest;
 import jakarta.validation.Valid;
-import java.net.InetAddress;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.EnumUtils;
@@ -54,8 +54,8 @@ public class FirewallController {
         || !INET_ADDRESS_VALIDATOR.isValidInet4Address(destIp)) {
       throw new ClientErrorException("Please provide IPv4 addresses in format 'A.B.C.D'");
     }
-    final var isAllowed = evaluateRuleUseCase.execute(InetAddress.ofLiteral(srcIp),
-        InetAddress.ofLiteral(destIp));
+    final var isAllowed = evaluateRuleUseCase.execute(InetAddresses.forString(srcIp),
+        InetAddresses.forString(destIp));
     if (isAllowed) {
       return ResponseEntity.ok().build();
     }

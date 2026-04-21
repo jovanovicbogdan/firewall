@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties({FirewallConfig.class})
 public class FirewallApplication {
 
-  static void main(String[] args) {
+  public static void main(String[] args) {
     SpringApplication.run(FirewallApplication.class, args);
   }
 

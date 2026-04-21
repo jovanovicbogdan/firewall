@@ -15,17 +15,16 @@ import org.springframework.stereotype.Component;
 public class RuleSync implements SmartLifecycle {
 
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
+  private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
   private final DataSource dataSource;
   private final FirewallConfig firewallConfig;
   private final RuleEvaluator ruleEvaluator;
-  private final ExecutorService threadExecutor;
 
   public RuleSync(final DataSource dataSource, final FirewallConfig firewallConfig,
       final RuleEvaluator ruleEvaluator) {
     this.dataSource = dataSource;
     this.firewallConfig = firewallConfig;
     this.ruleEvaluator = ruleEvaluator;
-    threadExecutor = Executors.newFixedThreadPool(firewallConfig.corePoolSize());
   }
 
   @Override
@@ -38,14 +37,14 @@ public class RuleSync implements SmartLifecycle {
     }
 
     isRunning.set(true);
-    log.info("Rule sync worker(s) started");
+    log.info("PgQ listener started");
   }
 
   @Override
   public void stop() {
     threadExecutor.shutdownNow();
     isRunning.set(false);
-    log.info("Rule sync worker(s) stopped");
+    log.info("PgQ listener stopped");
   }
 
   @Override

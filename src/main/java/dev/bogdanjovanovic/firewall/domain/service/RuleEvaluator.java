@@ -32,8 +32,10 @@ public class RuleEvaluator {
   public RuleEvaluator(final RuleRepository ruleRepository, final FirewallConfig firewallConfig) {
     this.ruleRepository = ruleRepository;
     this.firewallConfig = firewallConfig;
+
     threadScheduler = Executors.newScheduledThreadPool(firewallConfig.corePoolSize());
-    threadScheduler.scheduleAtFixedRate(this::refreshRulesIfNeeded, 0, 1L, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(this::refreshRulesIfNeeded, 0, 1L, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(this::rebuildRules, 0, 10, TimeUnit.MINUTES);
   }
 
   public boolean isAllowed(final long srcIp, final long destIp) {
@@ -72,6 +74,11 @@ public class RuleEvaluator {
       return;
     }
 
+    rebuildRules();
+  }
+
+  private void rebuildRules() {
+    log.info("Rebuilding rules...");
     final var rules = ruleRepository.findRules();
 
     if (rules.isEmpty()) {
