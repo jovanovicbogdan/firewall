@@ -79,25 +79,29 @@ public class RuleEvaluator {
 
   private void rebuildRules() {
     log.info("Rebuilding rules...");
-    final var rules = ruleRepository.findRules();
+    try {
+      final var rules = ruleRepository.findRules();
 
-    if (rules.isEmpty()) {
-      return;
+      if (rules.isEmpty()) {
+        return;
+      }
+
+      final var start = System.currentTimeMillis();
+      final Builder<Long, ImmutableRangeMap<Long, Action>> rulesMapBuilder = ImmutableRangeMap.builder();
+      for (final var rule : rules) {
+        final var destMap = ImmutableRangeMap.of(
+            Range.closed(rule.getDestStart(), rule.getDestEnd()), rule.getAction());
+        rulesMapBuilder.put(Range.closed(rule.getSrcStart(), rule.getSrcEnd()), destMap);
+      }
+      this.rules.set(rulesMapBuilder.build());
+      final var end = System.currentTimeMillis();
+      log.info("Rules rebuilt, took {}ms", end - start);
+
+      shouldRebuild.set(false);
+      lastRebuildTs.set(System.currentTimeMillis());
+    } catch (Exception ex) {
+      log.error("Failed to rebuild rules", ex);
     }
-
-    final var start = System.currentTimeMillis();
-    final Builder<Long, ImmutableRangeMap<Long, Action>> rulesMapBuilder = ImmutableRangeMap.builder();
-    for (final var rule : rules) {
-      final var destMap = ImmutableRangeMap.of(
-          Range.closed(rule.getDestStart(), rule.getDestEnd()), rule.getAction());
-      rulesMapBuilder.put(Range.closed(rule.getSrcStart(), rule.getSrcEnd()), destMap);
-    }
-    this.rules.set(rulesMapBuilder.build());
-    final var end = System.currentTimeMillis();
-    log.info("Rules rebuilt, took {}ms", end - start);
-
-    shouldRebuild.set(false);
-    lastRebuildTs.set(System.currentTimeMillis());
   }
 
 }

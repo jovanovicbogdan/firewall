@@ -2,8 +2,11 @@ package dev.bogdanjovanovic.firewall.infrastructure.sync;
 
 import dev.bogdanjovanovic.firewall.common.config.FirewallConfig;
 import dev.bogdanjovanovic.firewall.domain.service.RuleEvaluator;
+import dev.bogdanjovanovic.firewall.infrastructure.persistence.RuleRepository;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
@@ -16,15 +19,16 @@ public class RuleSync implements SmartLifecycle {
 
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
   private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
+  private final ScheduledExecutorService threadScheduler = Executors.newSingleThreadScheduledExecutor();
   private final DataSource dataSource;
-  private final FirewallConfig firewallConfig;
   private final RuleEvaluator ruleEvaluator;
+  private final RuleRepository ruleRepository;
 
-  public RuleSync(final DataSource dataSource, final FirewallConfig firewallConfig,
-      final RuleEvaluator ruleEvaluator) {
+  public RuleSync(final DataSource dataSource, final RuleEvaluator ruleEvaluator,
+      final RuleRepository ruleRepository) {
     this.dataSource = dataSource;
-    this.firewallConfig = firewallConfig;
     this.ruleEvaluator = ruleEvaluator;
+    this.ruleRepository = ruleRepository;
   }
 
   @Override
@@ -32,12 +36,15 @@ public class RuleSync implements SmartLifecycle {
     final var pgQWorker = new Thread(new PgQWorker(dataSource, ruleEvaluator));
 //    pgQWorker.setDaemon(true);
 
-    for (int i = 0; i < firewallConfig.corePoolSize(); i++) {
-      threadExecutor.execute(pgQWorker);
-    }
+    threadExecutor.execute(pgQWorker);
+    log.info("PgQ listener started");
+
+    final var pgQMonitor = new Thread(new PgQMonitor(ruleRepository));
+
+    threadScheduler.scheduleWithFixedDelay(pgQMonitor, 0, 10, TimeUnit.SECONDS);
+    log.info("PgQ monitor started");
 
     isRunning.set(true);
-    log.info("PgQ listener started");
   }
 
   @Override

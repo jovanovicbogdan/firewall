@@ -23,4 +23,7 @@ public interface RuleRepository extends Repository<RuleEntity, Long> {
   @Query("SELECT * FROM rule")
   List<RuleEntity> findRules();
 
+  @Query("SELECT pg_notification_queue_usage();")
+  double findPgQSize();
+
 }

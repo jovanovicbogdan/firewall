@@ -6,16 +6,6 @@ PgQ. Whenever rule is inserted, updated or deleted a trigger is fired to signal 
 `RuleEvaluator` class. To avoid constant rebuilding, throttling is implemented, the time between
 rebuilding has to be at least 5 seconds.
 
-## Message Delivery
-
-From PostgreSQL [docs](https://www.postgresql.org/docs/current/sql-notify.html):
-
-> PgQ `NOTIFY` docs states if the same channel name is signaled multiple times with
-identical payload strings within the same transaction, only one instance of the notification event
-is delivered to listeners. NOTIFY guarantees that notifications from the same transaction get
-delivered in the order they were sent. It is also guaranteed that messages from different
-transactions are delivered in the order in which the transactions committed.
-
 ## REST
 
 ## Add rules
