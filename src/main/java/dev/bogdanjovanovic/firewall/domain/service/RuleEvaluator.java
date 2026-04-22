@@ -34,7 +34,8 @@ public class RuleEvaluator {
     this.firewallConfig = firewallConfig;
 
     threadScheduler = Executors.newScheduledThreadPool(firewallConfig.corePoolSize());
-    threadScheduler.scheduleWithFixedDelay(this::refreshRulesIfNeeded, 0, 1L, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(this::refreshRulesIfNeeded, 0,
+        firewallConfig.cooldownMs() / 2, TimeUnit.SECONDS);
     threadScheduler.scheduleWithFixedDelay(this::rebuildRules, 0, 10, TimeUnit.MINUTES);
   }
 

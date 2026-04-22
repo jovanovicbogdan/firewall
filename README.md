@@ -1,10 +1,13 @@
 # Firewall
 
-On app startup `PgQWorker` listener threads are started to listen for incoming notifications from
-PgQ. Whenever rule is inserted, updated or deleted a trigger is fired to signal an event
-`rule_changed`. This event requests that in-memory `ImmutableRangeMap` should be rebuilt in
-`RuleEvaluator` class. To avoid constant rebuilding, throttling is implemented, the time between
-rebuilding has to be at least 5 seconds.
+Rules are persisted in PostgreSQL database and periodically synced with in-memory data structure
+to ensure very fast reads. Threads are scheduled to periodically check if in-memory DS needs to be
+refreshed. It will be refreshed if the update was requested from a PgQ listener thread and if
+default 10 seconds have passed since the last update.
+
+On app startup, PgQ listener thread is started to listen for an incoming notification from PgQ. A
+`PgMonitor` thread is also scheduled to monitor the queue size and it's configured to warn if queue
+size exceeds 50%.
 
 ## REST
 
