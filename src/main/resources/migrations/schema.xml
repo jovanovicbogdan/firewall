@@ -41,16 +41,10 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <createIndex tableName="rule" indexName="idx_rule_src_start">
+    <createIndex tableName="rule" indexName="idx_rule_src_start_src_end_dest_start_dest_end">
       <column name="src_start"/>
-    </createIndex>
-    <createIndex tableName="rule" indexName="idx_rule_src_end">
       <column name="src_end"/>
-    </createIndex>
-    <createIndex tableName="rule" indexName="idx_rule_dest_start">
       <column name="dest_start"/>
-    </createIndex>
-    <createIndex tableName="rule" indexName="idx_rule_dest_end">
       <column name="dest_end"/>
     </createIndex>
   </changeSet>
@@ -59,7 +53,7 @@
     <sql splitStatements="false">
       CREATE OR REPLACE FUNCTION notify_rule_change() RETURNS trigger AS $notify_rule_change$
       BEGIN
-        PERFORM pg_notify('rule_events', 'rule_changed');
+        PERFORM pg_notify('rule_events', '');
         RETURN NULL;
       END;
       $notify_rule_change$ LANGUAGE plpgsql;
@@ -67,7 +61,7 @@
     <sql>
       CREATE TRIGGER notify_rule_change
       AFTER INSERT OR UPDATE OR DELETE ON rule
-      FOR EACH ROW
+      FOR EACH STATEMENT
       EXECUTE FUNCTION notify_rule_change();
     </sql>
     <rollback>

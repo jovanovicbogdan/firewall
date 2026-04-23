@@ -1,9 +1,7 @@
 package dev.bogdanjovanovic.firewall.infrastructure.sync;
 
-import dev.bogdanjovanovic.firewall.common.config.FirewallConfig;
 import dev.bogdanjovanovic.firewall.domain.service.RuleEvaluator;
 import dev.bogdanjovanovic.firewall.infrastructure.persistence.RuleRepository;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -18,8 +16,7 @@ import org.springframework.stereotype.Component;
 public class RuleSync implements SmartLifecycle {
 
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
-  private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
-  private final ScheduledExecutorService threadScheduler = Executors.newSingleThreadScheduledExecutor();
+  private final ScheduledExecutorService threadScheduler = Executors.newScheduledThreadPool(2);
   private final DataSource dataSource;
   private final RuleEvaluator ruleEvaluator;
   private final RuleRepository ruleRepository;
@@ -33,10 +30,9 @@ public class RuleSync implements SmartLifecycle {
 
   @Override
   public void start() {
-    final var pgQWorker = new Thread(new PgQWorker(dataSource, ruleEvaluator));
-//    pgQWorker.setDaemon(true);
+    final var pgQWorker = new Thread(new PgQListener(dataSource, ruleEvaluator));
 
-    threadExecutor.execute(pgQWorker);
+    threadScheduler.scheduleWithFixedDelay(pgQWorker, 0, 3, TimeUnit.SECONDS);
     log.info("PgQ listener started");
 
     final var pgQMonitor = new Thread(new PgQMonitor(ruleRepository));
@@ -49,9 +45,9 @@ public class RuleSync implements SmartLifecycle {
 
   @Override
   public void stop() {
-    threadExecutor.shutdownNow();
+    threadScheduler.shutdownNow();
     isRunning.set(false);
-    log.info("PgQ listener stopped");
+    log.info("PgQ listener & PgQ monitor stopped");
   }
 
   @Override

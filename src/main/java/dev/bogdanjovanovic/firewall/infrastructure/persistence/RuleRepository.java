@@ -13,12 +13,17 @@ public interface RuleRepository extends Repository<RuleEntity, Long> {
 
   void save(RuleEntity ruleEntity);
 
-  @Query("SELECT EXISTS (SELECT 1 FROM rule WHERE (src_start <= :srcStart "
+  // Two ranges overlap if:
+  //   - the start of one is before the end of the other, and
+  //   - the end of one is after the start of the other
+  @Query("SELECT EXISTS ("
+      + "SELECT 1 "
+      + "FROM rule "
+      + "WHERE src_start <= :srcEnd "
       + "AND src_end >= :srcStart "
-      + "OR src_end >= :srcEnd "
-      + "AND src_start <= :srcEnd) AND action = :action)")
-  boolean isOverlap(@Param("srcStart") Long srcStart, @Param("srcEnd") Long srcEnd, @Param("action")
-      Action action);
+      + "AND action = :action)")
+  boolean isOverlap(@Param("srcStart") Long srcStart, @Param("srcEnd") Long srcEnd,
+      @Param("action") Action action);
 
   @Query("SELECT * FROM rule")
   List<RuleEntity> findRules();
