@@ -28,7 +28,7 @@ public class PgQListener implements Runnable {
       final var notifications = pgConn.getNotifications();
 
       if (notifications.length > 0) {
-        log.info("New PgQ notification available, requesting rule rebuild...");
+        log.info("Received new PgQ notification, requesting rule rebuild...");
         ruleEvaluator.requestRuleRebuild();
       }
     } catch (Exception ex) {

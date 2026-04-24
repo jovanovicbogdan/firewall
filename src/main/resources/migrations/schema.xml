@@ -41,11 +41,10 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <createIndex tableName="rule" indexName="idx_rule_src_start_src_end_dest_start_dest_end">
+    <createIndex tableName="rule" indexName="idx_rule_src_start_src_end_action">
       <column name="src_start"/>
       <column name="src_end"/>
-      <column name="dest_start"/>
-      <column name="dest_end"/>
+      <column name="action"/>
     </createIndex>
   </changeSet>
 
