@@ -79,7 +79,7 @@ public class RuleEvaluator {
   }
 
   private void rebuildRules() {
-    log.info("Rebuilding rules...");
+    log.info("Rebuilding rules");
     try {
       final var rules = ruleRepository.findRules();
 

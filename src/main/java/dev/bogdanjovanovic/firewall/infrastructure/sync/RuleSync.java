@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class RuleSync implements SmartLifecycle {
 
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
-  private final ScheduledExecutorService threadScheduler = Executors.newScheduledThreadPool(2);
+  private final ScheduledExecutorService threadScheduler = Executors.newScheduledThreadPool(3);
   private final DataSource dataSource;
   private final RuleEvaluator ruleEvaluator;
   private final RuleRepository ruleRepository;
@@ -30,14 +30,21 @@ public class RuleSync implements SmartLifecycle {
 
   @Override
   public void start() {
-    final var pgQWorker = new Thread(new PgQListener(dataSource, ruleEvaluator));
+    final var pgQConnection = new PgQConnection(dataSource);
+    pgQConnection.registerListener();
 
-    threadScheduler.scheduleWithFixedDelay(pgQWorker, 0, 3, TimeUnit.SECONDS);
+    final var keepPgQConnectionAliveThread = new Thread(pgQConnection);
+    threadScheduler.scheduleWithFixedDelay(keepPgQConnectionAliveThread, 0, 5, TimeUnit.SECONDS);
+    log.info("PgQ connection keep alive started");
+
+    final var pgQListener = new PgQListener(pgQConnection, ruleEvaluator);
+
+    final var pgQListenerThread = new Thread(pgQListener);
+    threadScheduler.scheduleWithFixedDelay(pgQListenerThread, 0, 3, TimeUnit.SECONDS);
     log.info("PgQ listener started");
 
-    final var pgQMonitor = new Thread(new PgQMonitor(ruleRepository));
-
-    threadScheduler.scheduleWithFixedDelay(pgQMonitor, 0, 10, TimeUnit.SECONDS);
+    final var pgQMonitorThread = new Thread(new PgQMonitor(ruleRepository));
+    threadScheduler.scheduleWithFixedDelay(pgQMonitorThread, 0, 10, TimeUnit.SECONDS);
     log.info("PgQ monitor started");
 
     isRunning.set(true);
@@ -47,7 +54,7 @@ public class RuleSync implements SmartLifecycle {
   public void stop() {
     threadScheduler.shutdownNow();
     isRunning.set(false);
-    log.info("PgQ listener & PgQ monitor stopped");
+    log.info("PgQ listener, PgQ monitor & PgQ connection keep alive stopped");
   }
 
   @Override
