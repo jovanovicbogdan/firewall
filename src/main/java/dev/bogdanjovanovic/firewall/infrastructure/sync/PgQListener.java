@@ -1,33 +1,59 @@
 package dev.bogdanjovanovic.firewall.infrastructure.sync;
 
-import dev.bogdanjovanovic.firewall.domain.service.RuleEvaluator;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.postgresql.PGConnection;
 
 @Slf4j
 public class PgQListener implements Runnable {
 
-  private final PgQConnection pgQConnection;
-  private final RuleEvaluator ruleEvaluator;
+  private static final String CHANNEL = "rule_events";
+  private final DataSource dataSource;
+  private final AtomicReference<Connection> connection;
 
-  public PgQListener(final PgQConnection pgQConnection, final RuleEvaluator ruleEvaluator) {
-    this.pgQConnection = pgQConnection;
-    this.ruleEvaluator = ruleEvaluator;
+  public PgQListener(final DataSource dataSource) {
+    this.dataSource = dataSource;
+    this.connection = new AtomicReference<>(establishConnection());
   }
 
   @Override
   public void run() {
-    try {
-      final var pgConn = pgQConnection.getConnection().unwrap(PGConnection.class);
-
-      final var notifications = pgConn.getNotifications();
-
-      if (notifications.length > 0) {
-        log.info("Received new PgQ notification, requesting rule rebuild");
-        ruleEvaluator.requestRuleRebuild();
-      }
+    try (final var stmt = connection.get().createStatement()) {
+      stmt.execute("SELECT 1;");
     } catch (Exception ex) {
-      log.error("PgQ listener failed", ex);
+      log.error("PgQ connection keep alive failed", ex);
+      if (ex instanceof SQLException) {
+        final var conn = establishConnection();
+        if (conn != null) {
+          connection.set(conn);
+          registerListener();
+        }
+      }
+    }
+  }
+
+  public Connection getConnection() {
+    return connection.get();
+  }
+
+  public void registerListener() {
+    try (final var stmt = getConnection().createStatement()) {
+      stmt.execute(String.format("LISTEN %s", CHANNEL));
+      log.info("Listening on PgQ channel {}", CHANNEL);
+    } catch (Exception ex) {
+      log.error("Failed to register PgQ listener", ex);
+    }
+  }
+
+  private Connection establishConnection() {
+    try {
+      log.info("Attempting to establish a connection");
+      return dataSource.getConnection();
+    } catch (Exception ex) {
+      log.error("Failed to establish a connection to PgQ", ex);
+      return null;
     }
   }
 

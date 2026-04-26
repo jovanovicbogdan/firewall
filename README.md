@@ -1,17 +1,37 @@
 # Firewall
 
-Rules are persisted in PostgreSQL database and periodically synced with in-memory data structure
-to ensure very fast reads. Threads are scheduled to periodically check if in-memory DS needs to be
-refreshed. It will be refreshed if the update was requested from a PgQ listener thread and if
-default 10 seconds have passed since the last update.
+## Persistence
 
-On app startup, PgQ listener thread is started to listen for an incoming notification from PgQ. A
-`PgMonitor` thread is also scheduled to monitor the queue size and it's configured to warn if queue
-size exceeds 50%.
+Rules are persisted in PostgreSQL database. As long as valid action (ALLOW or DENY), source and
+destination ranges are provided there are no other constraints when adding new rules. It means that
+rule overlaps are also supported. Whenever a rule is inserted, updated or deleted database
+trigger will fire (on each statement) and notify PgQ channel about the change. Event though
+PostgreSQL performs deduplication of messages, currently, an empty string is sent to `rule_events`
+channel.
+
+## Rule sync
+
+PgQ listener thread is started to listen for notifications from PgQ. Dedicated connection is
+established for listener (not a pooled connection) and if for some reason connection is lost, an
+attempts will be made to re-establish the connection and register listener again. Every 5 seconds
+pings are sent to PostgreSQL to keep the connection alive.
+
+PgQ notification thread checks every 3 seconds if there are available notifications. If there are
+available notifications it requests in-memory data structure holding all the rules to be rebuilt.
+
+PgQ monitor thread is also scheduled to monitor the queue size and it's configured to warn if
+queue size exceeds 50%.
+
+## Rule evaluation
+
+Rules are read from an in-memory `TreeRangeMap` to provide `O(log n)` reads. Throttling is
+implemented to avoid potential constant rebuilding of `TreeRangeMap`. If the rule rebuild has been
+requested and if since last update passed some time (default 5 seconds) then `TreeRangeMap` will be
+refreshed. Also, `TreeRangeMap` is rebuilt unconditionally every 10 minutes.
 
 ## REST
 
-## Add rules
+## Add rule
 
 ```
 POST /api/v1/firewall/rules
@@ -26,7 +46,7 @@ Content-Type: application/json
 }
 ```
 
-## Evaluate rule
+## Firewall decision
 
 ```
 GET /api/v1/firewall/decision?srcIp=<srcIp>&destIp=<destIp>

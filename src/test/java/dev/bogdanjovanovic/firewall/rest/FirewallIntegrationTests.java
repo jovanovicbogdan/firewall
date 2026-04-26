@@ -30,29 +30,6 @@ public class FirewallIntegrationTests extends BaseTest {
   }
 
   @Test
-  void shouldNotAddOverlappingRule() {
-    addRule(new AddRuleRequest(
-        "20.20.20.20",
-        "25.25.25.25",
-        "30.30.30.30",
-        "35.35.35.35",
-        Action.ALLOW.name()
-    ));
-    restTestClient.post()
-        .uri(FIREWALL_RULES_API)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(new AddRuleRequest(
-            "21.21.21.21",
-            "23.23.23.23",
-            "130.130.130.130",
-            "135.135.135.135",
-            Action.ALLOW.name()
-        ))
-        .exchange()
-        .expectStatus().is4xxClientError();
-  }
-
-  @Test
   void shouldAllowWhenSrcIpAndDestIpInRange() {
     final var addRuleRequest = new AddRuleRequest(
         "1.1.1.1",

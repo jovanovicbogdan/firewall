@@ -30,18 +30,18 @@ public class RuleSync implements SmartLifecycle {
 
   @Override
   public void start() {
-    final var pgQConnection = new PgQConnection(dataSource);
-    pgQConnection.registerListener();
-
-    final var keepPgQConnectionAliveThread = new Thread(pgQConnection);
-    threadScheduler.scheduleWithFixedDelay(keepPgQConnectionAliveThread, 0, 5, TimeUnit.SECONDS);
-    log.info("PgQ connection keep alive started");
-
-    final var pgQListener = new PgQListener(pgQConnection, ruleEvaluator);
+    final var pgQListener = new PgQListener(dataSource);
+    pgQListener.registerListener();
 
     final var pgQListenerThread = new Thread(pgQListener);
-    threadScheduler.scheduleWithFixedDelay(pgQListenerThread, 0, 3, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(pgQListenerThread, 0, 5, TimeUnit.SECONDS);
     log.info("PgQ listener started");
+
+    final var pgQNotification = new PgQNotification(pgQListener, ruleEvaluator);
+
+    final var pgQNotificationThread = new Thread(pgQNotification);
+    threadScheduler.scheduleWithFixedDelay(pgQNotificationThread, 0, 3, TimeUnit.SECONDS);
+    log.info("PgQ notification started");
 
     final var pgQMonitorThread = new Thread(new PgQMonitor(ruleRepository));
     threadScheduler.scheduleWithFixedDelay(pgQMonitorThread, 0, 10, TimeUnit.SECONDS);
@@ -54,7 +54,7 @@ public class RuleSync implements SmartLifecycle {
   public void stop() {
     threadScheduler.shutdownNow();
     isRunning.set(false);
-    log.info("PgQ listener, PgQ monitor & PgQ connection keep alive stopped");
+    log.info("PgQ listener, PgQ notification & PgQ monitor stopped");
   }
 
   @Override

@@ -1,4 +1,7 @@
-### Add new rule
+### Get firewall decision
+GET http://localhost:8080/api/v1/firewall/decision?srcIp=20.20.20.20&destIp=30.30.30.30
+
+### Add rule #1
 POST http://localhost:8080/api/v1/firewall/rules
 Content-Type: application/json
 
@@ -10,7 +13,28 @@ Content-Type: application/json
   "action": "ALLOW"
 }
 
-### Get firewall decision
-GET http://localhost:8080/api/v1/firewall/decision?srcIp=21.21.21.21&destIp=32.32.32.32
+### Add rule #2
+POST http://localhost:8080/api/v1/firewall/rules
+Content-Type: application/json
+
+{
+  "srcStart": "22.22.22.22",
+  "srcEnd": "24.24.24.24",
+  "destStart": "40.40.40.40",
+  "destEnd": "45.45.45.45",
+  "action": "DENY"
+}
+
+### Add rule #3
+POST http://localhost:8080/api/v1/firewall/rules
+Content-Type: application/json
+
+{
+  "srcStart": "22.22.22.22",
+  "srcEnd": "24.24.24.24",
+  "destStart": "31.31.31.31",
+  "destEnd": "34.34.34.34",
+  "action": "DENY"
+}
 
 ###

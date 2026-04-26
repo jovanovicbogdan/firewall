@@ -1,8 +1,8 @@
 package dev.bogdanjovanovic.firewall.domain.service;
 
-import com.google.common.collect.ImmutableRangeMap;
-import com.google.common.collect.ImmutableRangeMap.Builder;
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.TreeRangeMap;
 import dev.bogdanjovanovic.firewall.common.config.FirewallConfig;
 import dev.bogdanjovanovic.firewall.domain.Action;
 import dev.bogdanjovanovic.firewall.infrastructure.persistence.RuleRepository;
@@ -21,8 +21,8 @@ public class RuleEvaluator {
 
   private final AtomicBoolean shouldRebuild = new AtomicBoolean(false);
   private final AtomicLong lastRebuildTs = new AtomicLong(System.currentTimeMillis());
-  private final AtomicReference<ImmutableRangeMap<Long, ImmutableRangeMap<Long, Action>>> rules = new AtomicReference<>(
-      ImmutableRangeMap.of());
+  private final AtomicReference<RangeMap<Long, RangeMap<Long, Action>>> rules = new AtomicReference<>(
+      TreeRangeMap.create());
 
   private final RuleRepository ruleRepository;
   private final FirewallConfig firewallConfig;
@@ -55,7 +55,7 @@ public class RuleEvaluator {
     return Action.ALLOW.equals(action);
   }
 
-  public ImmutableRangeMap<Long, ImmutableRangeMap<Long, Action>> getRules() {
+  public RangeMap<Long, RangeMap<Long, Action>> getRules() {
     return rules.get();
   }
 
@@ -88,13 +88,17 @@ public class RuleEvaluator {
       }
 
       final var start = System.currentTimeMillis();
-      final Builder<Long, ImmutableRangeMap<Long, Action>> rulesMapBuilder = ImmutableRangeMap.builder();
+      final RangeMap<Long, RangeMap<Long, Action>> rulesRebuild = TreeRangeMap.create();
       for (final var rule : rules) {
-        final var destMap = ImmutableRangeMap.of(
-            Range.closed(rule.getDestStart(), rule.getDestEnd()), rule.getAction());
-        rulesMapBuilder.put(Range.closed(rule.getSrcStart(), rule.getSrcEnd()), destMap);
+        final RangeMap<Long, Action> destMap = TreeRangeMap.create();
+
+        final var destRange = Range.closed(rule.getDestStart(), rule.getDestEnd());
+        destMap.put(destRange, rule.getAction());
+
+        final var srcRange = Range.closed(rule.getSrcStart(), rule.getSrcEnd());
+        rulesRebuild.merge(srcRange, destMap, (originalDest, incomingDest) -> incomingDest);
       }
-      this.rules.set(rulesMapBuilder.build());
+      this.rules.set(rulesRebuild);
       final var end = System.currentTimeMillis();
       log.info("Rules rebuilt, took {}ms", end - start);
 
