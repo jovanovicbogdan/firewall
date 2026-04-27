@@ -31,7 +31,6 @@ public class RuleSync implements SmartLifecycle {
   @Override
   public void start() {
     final var pgQListener = new PgQListener(dataSource);
-    pgQListener.registerListener();
 
     final var pgQListenerThread = new Thread(pgQListener);
     threadScheduler.scheduleWithFixedDelay(pgQListenerThread, 0, 5, TimeUnit.SECONDS);
