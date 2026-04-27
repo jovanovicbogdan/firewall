@@ -32,18 +32,14 @@ public class RuleSync implements SmartLifecycle {
   public void start() {
     final var pgQListener = new PgQListener(dataSource);
 
-    final var pgQListenerThread = new Thread(pgQListener);
-    threadScheduler.scheduleWithFixedDelay(pgQListenerThread, 0, 5, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(new PgQListener(dataSource), 0, 5, TimeUnit.SECONDS);
     log.info("PgQ listener started");
 
-    final var pgQNotification = new PgQNotification(pgQListener, ruleEvaluator);
-
-    final var pgQNotificationThread = new Thread(pgQNotification);
-    threadScheduler.scheduleWithFixedDelay(pgQNotificationThread, 0, 3, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(new PgQNotification(pgQListener, ruleEvaluator), 0, 3,
+        TimeUnit.SECONDS);
     log.info("PgQ notification started");
 
-    final var pgQMonitorThread = new Thread(new PgQMonitor(ruleRepository));
-    threadScheduler.scheduleWithFixedDelay(pgQMonitorThread, 0, 10, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(new PgQMonitor(ruleRepository), 0, 10, TimeUnit.SECONDS);
     log.info("PgQ monitor started");
 
     isRunning.set(true);
