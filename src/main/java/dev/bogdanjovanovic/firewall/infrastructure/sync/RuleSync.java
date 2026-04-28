@@ -32,7 +32,7 @@ public class RuleSync implements SmartLifecycle {
   public void start() {
     final var pgQListener = new PgQListener(dataSource);
 
-    threadScheduler.scheduleWithFixedDelay(new PgQListener(dataSource), 0, 5, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(pgQListener, 0, 5, TimeUnit.SECONDS);
     log.info("PgQ listener started");
 
     threadScheduler.scheduleWithFixedDelay(new PgQNotification(pgQListener, ruleEvaluator), 0, 3,
