@@ -2,15 +2,14 @@ package dev.bogdanjovanovic.firewall.infrastructure.sync;
 
 import dev.bogdanjovanovic.firewall.domain.service.RuleEvaluator;
 import lombok.extern.slf4j.Slf4j;
-import org.postgresql.PGConnection;
 
 @Slf4j
-public class PgQNotification implements Runnable {
+public class PgQNotificationPoller implements Runnable {
 
   private final PgQListener pgQListener;
   private final RuleEvaluator ruleEvaluator;
 
-  public PgQNotification(final PgQListener pgQListener, final RuleEvaluator ruleEvaluator) {
+  public PgQNotificationPoller(final PgQListener pgQListener, final RuleEvaluator ruleEvaluator) {
     this.pgQListener = pgQListener;
     this.ruleEvaluator = ruleEvaluator;
   }
@@ -18,12 +17,10 @@ public class PgQNotification implements Runnable {
   @Override
   public void run() {
     try {
-      final var pgConn = pgQListener.getConnection().unwrap(PGConnection.class);
-
-      final var notifications = pgConn.getNotifications();
+      final var notifications = pgQListener.getPgNotifications();
 
       if (notifications.length > 0) {
-        log.info("Received new PgQ notification, requesting rule rebuild");
+        log.info("Received new PgQ notification(s), requesting rule rebuild");
         ruleEvaluator.requestRuleRebuild();
       }
     } catch (Exception ex) {

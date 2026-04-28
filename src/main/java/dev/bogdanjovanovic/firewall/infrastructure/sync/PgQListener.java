@@ -1,81 +1,99 @@
 package dev.bogdanjovanovic.firewall.infrastructure.sync;
 
 import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
 
 @Slf4j
-public class PgQListener implements Runnable {
+public class PgQListener implements AutoCloseable {
 
+  private static final PGNotification[] EMPTY_PG_NOTIFICATION_ARRAY = new PGNotification[0];
   private static final String CHANNEL = "rule_events";
-  private static Connection CONNECTION = null;
+  private static Connection connection;
 
-  private final AtomicBoolean listenerRegistered = new AtomicBoolean(false);
+  private final Object connectionLock = new Object();
   private final DataSource dataSource;
 
   public PgQListener(final DataSource dataSource) {
     this.dataSource = dataSource;
-    init();
   }
 
   @Override
-  public void run() {
-    if (!listenerRegistered.get()) {
-      registerListener();
+  public void close() {
+    synchronized (connectionLock) {
+      closeConnection();
     }
+  }
 
-    try (final var stmt = CONNECTION.createStatement()) {
-      stmt.execute("SELECT 1;");
-    } catch (Exception ex) {
-      log.error("PgQ listener failed", ex);
+  public PGNotification[] getPgNotifications() {
+    synchronized (connectionLock) {
       try {
-        if (CONNECTION.isValid(3)) return;
-
-        CONNECTION.close();
-        CONNECTION = null;
-        listenerRegistered.set(false);
-
-        if (establishConnection()) {
-          registerListener();
-        }
-      } catch (SQLException sqlException) {
-        log.error("Failed to close the connection", sqlException);
+        return connection.unwrap(PGConnection.class).getNotifications();
+      } catch (Exception ex) {
+        log.error("Failed to get PgQ notifications", ex);
+        return EMPTY_PG_NOTIFICATION_ARRAY;
       }
     }
   }
 
-  public Connection getConnection() {
-    return CONNECTION;
-  }
-
-  private void init() {
-    if (establishConnection()) {
-      registerListener();
+  public boolean getConnectionStatus() {
+    synchronized (connectionLock) {
+      try {
+        if (connection != null && !connection.isClosed() && connection.isValid(3)) {
+          // Calling multiple times LISTEN on the same CHANNEL
+          // won't hurt, PostgreSQL treat it as idempotent.
+          // At the same time use it to ping database to
+          // keep the connection alive.
+          registerListener();
+          return true;
+        }
+        return false;
+      } catch (Exception ex) {
+        log.error("PgQ listener connection failure", ex);
+        return false;
+      }
     }
   }
 
-  private boolean establishConnection() {
-    try {
-      log.info("Attempting to establish a connection");
-      CONNECTION = dataSource.getConnection();
-      log.info("PgQ listener connection established");
-      return true;
-    } catch (Exception ex) {
-      log.error("Failed to establish a connection to PgQ", ex);
-      return false;
+  public void tryToConnectAndStartListening() {
+    synchronized (connectionLock) {
+      try {
+        // connection may still be open but invalid
+        closeConnection();
+
+        log.info("Attempting to establish a new connection");
+        connection = dataSource.getConnection();
+        log.info("PgQ listener connection established");
+
+        registerListener();
+      } catch (Exception ex) {
+        log.error("PgQ listener connection failure", ex);
+      }
     }
   }
 
   private void registerListener() {
-    try (final var stmt = getConnection().createStatement()) {
+    try (final var stmt = connection.createStatement()) {
       stmt.execute(String.format("LISTEN %s", CHANNEL));
       log.info("Listening on PgQ channel {}", CHANNEL);
-      listenerRegistered.set(true);
     } catch (Exception ex) {
       log.error("Failed to register a listener", ex);
-      listenerRegistered.set(false);
+    }
+  }
+
+  private void closeConnection() {
+    try {
+      log.info("Trying to close PgQ listener connection");
+      if (connection != null && !connection.isClosed()) {
+        connection.close();
+      }
+      log.info("PgQ listener connection closed");
+    } catch (Exception ex) {
+      log.error("Failed to close PgQ listener connection", ex);
+    } finally {
+      connection = null;
     }
   }
 

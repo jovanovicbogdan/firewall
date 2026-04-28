@@ -18,6 +18,7 @@ public class RuleSync implements SmartLifecycle {
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
   private final ScheduledExecutorService threadScheduler = Executors.newScheduledThreadPool(3);
   private final DataSource dataSource;
+  private PgQListener pgQListener;
   private final RuleEvaluator ruleEvaluator;
   private final RuleRepository ruleRepository;
 
@@ -30,13 +31,13 @@ public class RuleSync implements SmartLifecycle {
 
   @Override
   public void start() {
-    final var pgQListener = new PgQListener(dataSource);
+    pgQListener = new PgQListener(dataSource);
 
-    threadScheduler.scheduleWithFixedDelay(pgQListener, 0, 5, TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(new PgQWatchdog(pgQListener), 0, 5, TimeUnit.SECONDS);
     log.info("PgQ listener started");
 
-    threadScheduler.scheduleWithFixedDelay(new PgQNotification(pgQListener, ruleEvaluator), 0, 3,
-        TimeUnit.SECONDS);
+    threadScheduler.scheduleWithFixedDelay(new PgQNotificationPoller(pgQListener, ruleEvaluator), 0,
+        3, TimeUnit.SECONDS);
     log.info("PgQ notification started");
 
     threadScheduler.scheduleWithFixedDelay(new PgQMonitor(ruleRepository), 0, 10, TimeUnit.SECONDS);
@@ -48,6 +49,11 @@ public class RuleSync implements SmartLifecycle {
   @Override
   public void stop() {
     threadScheduler.shutdownNow();
+
+    if (pgQListener != null) {
+      pgQListener.close();
+    }
+
     isRunning.set(false);
     log.info("PgQ listener, PgQ notification & PgQ monitor stopped");
   }
